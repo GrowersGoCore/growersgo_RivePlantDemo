@@ -24,4 +24,5 @@ flutter:
 
   assets:
     - assets/rive/tomato.riv
+    - assets/rive/faces.riv
 

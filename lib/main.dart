@@ -30,25 +30,19 @@ class CustomRiveAnimation extends StatefulWidget {
 }
 
 class CustomRiveAnimationState extends State<CustomRiveAnimation> {
-  //_artboard is the artboard we are going to display in this section
-  //_growInput is the artboard controller input used to progress the plat grow
-  //_happy is the artboard controller input used to set the face happy
-  //_regular is the artboard controller input used to set the face regular
   Artboard? _artboard;
+  Artboard? _facesArtboard;
   SMIInput<double>? _growInput;
   SMIInput<bool>? _happy;
   SMIInput<bool>? _regular;
 
   Future<void> _loadRiveFile() async {
-    // get the rive file
     final file = await RiveFile.asset('assets/rive/tomato.riv');
-
-    // get the main plant artboard'
-    var mainartboardname = 'MainTomato';//in the file are multiples artboards we use MainThePlantWeNeed to display it
-    //all the Main plant artboards need to have this inputs in the rive file to work and the same names
+    final facefile = await RiveFile.asset('assets/rive/faces.riv');
+    var mainartboardname = 'Tomato';
     const progressImputName = 'growmain';
     const happyInputName = 'happy';
-    const regularInputName='regular';
+    const regularInputName = 'regular';
     final artboard = file.artboardByName(mainartboardname)?.instance();
     if (artboard != null) {
       final controller = StateMachineController.fromArtboard(
@@ -58,11 +52,28 @@ class CustomRiveAnimationState extends State<CustomRiveAnimation> {
       if (controller != null) {
         artboard.addController(controller);
         _growInput = controller.findInput<double>(progressImputName);
+        // _happy = controller.findInput<bool>(happyInputName);
+        // _regular = controller.findInput<bool>(regularInputName);
+      }
+      setState(() {
+        _artboard = artboard;
+      });
+    }
+
+    var overlayArtboardName = 'MainFaces';
+    final overlayArtboard = facefile.artboardByName(overlayArtboardName)?.instance();
+    if (overlayArtboard != null) {
+      final controller = StateMachineController.fromArtboard(
+        overlayArtboard,
+        'State Machine 1',
+      );
+      if (controller != null) {
+        overlayArtboard.addController(controller);
         _happy = controller.findInput<bool>(happyInputName);
         _regular = controller.findInput<bool>(regularInputName);
       }
       setState(() {
-        _artboard = artboard;
+        _facesArtboard = overlayArtboard;
       });
     }
   }
@@ -75,47 +86,56 @@ class CustomRiveAnimationState extends State<CustomRiveAnimation> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
-        Expanded(
-          child: Rive(
+        if (_artboard != null)
+          Rive(
             artboard: _artboard!,
             useArtboardSize: true,
+            fit: BoxFit.cover,
           ),
-        ),
-        // Slider to controll the plant grow value
-        Slider(
-          value: _growInput?.value ?? 0,
-          min: 0,
-          max: 60,
-          onChanged: (value) {
-            setState(() {
-              _growInput?.value = value;
-            });
-          },
-        ),
-        // buttons to change faces states
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        if (_facesArtboard != null)
+          Rive(
+            artboard: _facesArtboard!,
+            useArtboardSize: true,
+            fit: BoxFit.cover,
+          ),
+        Column(
           children: [
-            ElevatedButton(
-              onPressed: () {
+            Expanded(child: Container()),
+            Slider(
+              value: _growInput?.value ?? 0,
+              min: 0,
+              max: 150,
+              onChanged: (value) {
                 setState(() {
-                  _happy?.value = true;
-                  _regular?.value = false;
+                  _growInput?.value = value;
                 });
               },
-              child: const Text('Happy'),
             ),
-            const SizedBox(width: 20),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _happy?.value = false;
-                  _regular?.value = true;
-                });
-              },
-              child: const Text('Regular'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _happy?.value = true;
+                      _regular?.value = false;
+                    });
+                  },
+                  child: const Text('Happy'),
+                ),
+                const SizedBox(width: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _happy?.value = false;
+                      _regular?.value = true;
+                    });
+                  },
+                  child: const Text('Regular'),
+                ),
+              ],
             ),
           ],
         ),
